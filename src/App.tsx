@@ -3,6 +3,7 @@ import './App.css'
 
 type VenueStatus = 'Tengo lugar' | 'Necesito lugar'
 type MatchGroup = 'Experiencias' | 'Artistas' | 'Lugares'
+type AdminSection = 'Resumen' | 'Solicitudes' | 'Eventos' | 'Liquidaciones'
 
 type EventDraft = {
   eventType: string
@@ -110,6 +111,18 @@ const matches: Match[] = [
   },
 ]
 
+const adminApplications = [
+  { id: 'A-102', name: 'Sofi Correa', type: 'Artista', detail: 'Stand up · 45 min', zone: 'CABA + GBA Norte', status: 'Pendiente', emoji: '😂' },
+  { id: 'L-208', name: 'Casa Sifón', type: 'Lugar', detail: 'Bar · Hasta 60 personas', zone: 'Palermo', status: 'Pendiente', emoji: '🍸' },
+  { id: 'A-101', name: 'Milena Rouge', type: 'Artista', detail: 'Burlesque · 30 min', zone: 'CABA', status: 'Aprobado', emoji: '💃' },
+]
+
+const adminEvents = [
+  { id: 'PE-2408', client: 'Martina S.', plan: 'Noche de risas en Palermo', date: 'Sáb 22 nov · 21:00', total: 420000, status: 'Por confirmar' },
+  { id: 'PE-2407', client: 'Tomás G.', plan: 'Sofi Correa · Stand up', date: 'Vie 21 nov · 22:00', total: 180000, status: 'Seña abonada' },
+  { id: 'PE-2406', client: 'Carla M.', plan: 'Ritmo en terraza', date: 'Sáb 29 nov · 20:00', total: 365000, status: 'Confirmado' },
+]
+
 const steps = ['Tu plan', 'La zona', 'Día y presupuesto', 'El clima']
 
 const initialDraft: EventDraft = {
@@ -140,7 +153,153 @@ function formatDate(date: string) {
   }).format(new Date(`${date}T12:00:00`))
 }
 
+function AdminDashboard({ onExit }: { onExit: () => void }) {
+  const [section, setSection] = useState<AdminSection>('Resumen')
+  const [applications, setApplications] = useState(adminApplications)
+  const [notice, setNotice] = useState('')
+
+  const pendingApplications = applications.filter((application) => application.status === 'Pendiente')
+  const commissionTotal = adminEvents.reduce((total, event) => total + event.total * 0.3, 0)
+
+  const approveApplication = (id: string) => {
+    const selected = applications.find((application) => application.id === id)
+    setApplications((current) => current.map((application) => (
+      application.id === id ? { ...application, status: 'Aprobado' } : application
+    )))
+    if (selected) setNotice(`${selected.name} fue aprobado y ya puede aparecer en los matches.`)
+  }
+
+  const requestDetails = (name: string) => {
+    setNotice(`Marcamos a ${name} para pedir información adicional.`)
+  }
+
+  const menu: AdminSection[] = ['Resumen', 'Solicitudes', 'Eventos', 'Liquidaciones']
+
+  return (
+    <div className="admin-app">
+      <aside className="admin-sidebar">
+        <div>
+          <button className="brand admin-brand" type="button" onClick={onExit}>
+            <span className="brand-mark">pipi</span>
+            <span>eventos</span>
+          </button>
+          <p className="admin-kicker">Panel de administración</p>
+        </div>
+        <nav className="admin-menu" aria-label="Secciones de administración">
+          {menu.map((item) => (
+            <button
+              type="button"
+              key={item}
+              className={section === item ? 'is-active' : ''}
+              onClick={() => { setSection(item); setNotice('') }}
+            >
+              <span>{item === 'Resumen' ? '◫' : item === 'Solicitudes' ? '◌' : item === 'Eventos' ? '◈' : '◒'}</span>
+              {item}
+              {item === 'Solicitudes' && pendingApplications.length > 0 && <b>{pendingApplications.length}</b>}
+            </button>
+          ))}
+        </nav>
+        <button className="admin-exit" type="button" onClick={onExit}>Ver versión pública</button>
+      </aside>
+
+      <section className="admin-main">
+        <header className="admin-topbar">
+          <div>
+            <p className="section-kicker">Administración</p>
+            <h1>{section}</h1>
+          </div>
+          <div className="admin-profile"><span>JG</span><div><b>JuanMa</b><small>Administrador</small></div></div>
+        </header>
+
+        {notice && <div className="admin-notice"><span>✓</span>{notice}<button type="button" onClick={() => setNotice('')}>×</button></div>}
+
+        {section === 'Resumen' && (
+          <>
+            <div className="admin-stat-grid">
+              <article><span>Eventos activos</span><b>12</b><small>3 por confirmar</small></article>
+              <article><span>Solicitudes nuevas</span><b>{pendingApplications.length}</b><small>Artistas y lugares</small></article>
+              <article><span>Reservas del mes</span><b>{formatMoney(1285000)}</b><small>Facturación bruta</small></article>
+              <article><span>Comisión proyectada</span><b>{formatMoney(commissionTotal)}</b><small>30% de shows confirmados</small></article>
+            </div>
+            <div className="admin-two-columns">
+              <article className="admin-panel">
+                <div className="panel-heading"><div><p>PARA REVISAR</p><h2>Solicitudes nuevas</h2></div><button type="button" onClick={() => setSection('Solicitudes')}>Ver todas</button></div>
+                <div className="application-list">
+                  {pendingApplications.length ? pendingApplications.map((application) => (
+                    <div className="application-row" key={application.id}>
+                      <span className="application-avatar">{application.emoji}</span>
+                      <div><b>{application.name}</b><small>{application.detail} · {application.zone}</small></div>
+                      <button type="button" onClick={() => approveApplication(application.id)}>Aprobar</button>
+                    </div>
+                  )) : <p className="empty-state">No hay solicitudes pendientes.</p>}
+                </div>
+              </article>
+              <article className="admin-panel commission-panel">
+                <div className="panel-heading"><div><p>NEGOCIO</p><h2>Liquidaciones</h2></div><button type="button" onClick={() => setSection('Liquidaciones')}>Ver detalle</button></div>
+                <div className="commission-figure"><span>Comisión Pipi a liquidar</span><b>{formatMoney(156000)}</b><small>Próximo corte: 30 nov</small></div>
+                <div className="commission-rule"><span>30%</span><p>La plataforma retiene la comisión sobre el valor acordado del show. El artista ve su neto antes de aceptar.</p></div>
+              </article>
+            </div>
+            <article className="admin-panel events-preview">
+              <div className="panel-heading"><div><p>OPERACIÓN</p><h2>Próximos eventos</h2></div><button type="button" onClick={() => setSection('Eventos')}>Abrir agenda</button></div>
+              <EventTable events={adminEvents} compact />
+            </article>
+          </>
+        )}
+
+        {section === 'Solicitudes' && (
+          <article className="admin-panel full-panel">
+            <div className="panel-heading"><div><p>ALTAS DE PROVEEDORES</p><h2>Artistas y lugares</h2></div><span className="demo-badge">Modo demo</span></div>
+            <div className="application-table">
+              {applications.map((application) => (
+                <div className="application-table-row" key={application.id}>
+                  <div className="provider-name"><span className="application-avatar">{application.emoji}</span><div><b>{application.name}</b><small>{application.id} · {application.type}</small></div></div>
+                  <span>{application.detail}</span><span>{application.zone}</span><span className={`status-pill ${application.status === 'Aprobado' ? 'approved' : 'pending'}`}>{application.status}</span>
+                  <div className="row-actions">
+                    {application.status === 'Pendiente' ? <><button type="button" className="secondary-action" onClick={() => requestDetails(application.name)}>Pedir datos</button><button type="button" className="primary-action" onClick={() => approveApplication(application.id)}>Aprobar</button></> : <button type="button" className="secondary-action" onClick={() => setNotice(`Abrimos el perfil de ${application.name}.`)}>Ver perfil</button>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </article>
+        )}
+
+        {section === 'Eventos' && (
+          <article className="admin-panel full-panel">
+            <div className="panel-heading"><div><p>AGENDA Y RESERVAS</p><h2>Eventos en curso</h2></div><button type="button" className="primary-action" onClick={() => setNotice('Nuevo evento: esta acción se conectará a la base de datos.')}>Crear evento</button></div>
+            <EventTable events={adminEvents} />
+          </article>
+        )}
+
+        {section === 'Liquidaciones' && (
+          <div className="settlement-layout">
+            <article className="admin-panel settlement-summary"><p>COMISIÓN PROYECTADA</p><b>{formatMoney(commissionTotal)}</b><span>Shows confirmados en el período actual.</span><div><small>Valor de show</small><small>Comisión Pipi</small><small>Neto artista</small></div></article>
+            <article className="admin-panel full-panel"><div className="panel-heading"><div><p>CORTE NOVIEMBRE</p><h2>Liquidaciones pendientes</h2></div><span className="demo-badge">30% automático</span></div><div className="settlement-list">{adminEvents.map((event) => <div key={event.id}><span><b>{event.plan}</b><small>{event.id} · {event.client}</small></span><span><small>Show / reserva</small><b>{formatMoney(event.total)}</b></span><span><small>Comisión Pipi</small><b>{formatMoney(event.total * 0.3)}</b></span><span><small>Neto proveedor</small><b>{formatMoney(event.total * 0.7)}</b></span></div>)}</div></article>
+          </div>
+        )}
+      </section>
+    </div>
+  )
+}
+
+function EventTable({ events, compact = false }: { events: typeof adminEvents; compact?: boolean }) {
+  return (
+    <div className="event-table">
+      {!compact && <div className="event-table-head"><span>Evento</span><span>Fecha</span><span>Total</span><span>Estado</span></div>}
+      {events.map((event) => (
+        <div className="event-table-row" key={event.id}>
+          <div><b>{event.plan}</b><small>{event.id} · {event.client}</small></div>
+          <span>{event.date}</span>
+          <b>{formatMoney(event.total)}</b>
+          <span className={`status-pill ${event.status === 'Confirmado' ? 'approved' : event.status === 'Seña abonada' ? 'deposit' : 'pending'}`}>{event.status}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function App() {
+  const [view, setView] = useState<'public' | 'admin'>('public')
   const [draft, setDraft] = useState<EventDraft>(initialDraft)
   const [step, setStep] = useState(0)
   const [showResults, setShowResults] = useState(false)
@@ -200,6 +359,10 @@ function App() {
     }, 0)
   }
 
+  if (view === 'admin') {
+    return <AdminDashboard onExit={() => setView('public')} />
+  }
+
   return (
     <main>
       <nav className="nav-shell" aria-label="Navegación principal">
@@ -211,9 +374,12 @@ function App() {
           <a href="#como-funciona">Cómo funciona</a>
           <a href="#sumate">Para artistas y lugares</a>
         </div>
-        <button className="outline-button nav-cta" type="button" onClick={() => openProviderForm('artist')}>
-          Publicá tu show
-        </button>
+        <div className="nav-actions">
+          <button className="admin-entry" type="button" onClick={() => setView('admin')}>Admin</button>
+          <button className="outline-button nav-cta" type="button" onClick={() => openProviderForm('artist')}>
+            Publicá tu show
+          </button>
+        </div>
       </nav>
 
       {!showResults ? (
@@ -432,7 +598,7 @@ function App() {
         <section className="results-page">
           <div className="results-topbar">
             <button className="brand" type="button" onClick={() => setShowResults(false)}><span className="brand-mark">pipi</span><span>eventos</span></button>
-            <button className="text-button" type="button" onClick={scrollToPlanner}>← Editar mi plan</button>
+            <div className="result-top-actions"><button className="admin-entry" type="button" onClick={() => setView('admin')}>Admin</button><button className="text-button" type="button" onClick={scrollToPlanner}>← Editar mi plan</button></div>
           </div>
           <div className="results-hero">
             <div>

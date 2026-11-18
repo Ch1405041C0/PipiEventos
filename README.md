@@ -9,8 +9,9 @@ Pipi Eventos ayuda a organizar celebraciones conectando a clientes con artistas,
 - Botón de consulta por WhatsApp con el evento precargado.
 - Formularios de alta para artistas y lugares.
 - Regla de negocio visible para artistas: comisión de plataforma del 30% sobre el show acordado.
+- Entrada **Admin** para gestionar solicitudes de artistas/lugares, agenda de eventos y liquidaciones de comisión.
 
-Los perfiles y teléfonos del MVP son demostrativos. La integración real con proveedores, reservas y pagos se definirá antes de producción.
+Los perfiles, teléfonos y datos del panel admin son demostrativos. El acceso Admin todavía no tiene autenticación: se conectará a roles reales antes de producción.
 
 ## Desarrollo
 
